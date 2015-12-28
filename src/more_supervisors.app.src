@@ -1,0 +1,11 @@
+{application, more_supervisor,
+  [{description, "More supervisors beyond OTP basic one"},
+   {vsn, "1.0"},
+   {modules, []},
+   {registered, []},
+   {applications, [kernel, stdlib]},
+   % {mod, {more_supervisors_app, []}},
+   {env, [
+         ]}
+  ]
+ }
