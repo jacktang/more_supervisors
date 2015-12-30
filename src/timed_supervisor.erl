@@ -28,7 +28,7 @@
 %%%------------------------------------------------------------------------
 %%% @type day()         = mon | tue | wed | thu | fri | sat | sun
 %%% @type time()        = string() | {Hour::integer(), Min::integer(), Sec::integer()}.
-%%%                       Time can be represented as a "HH:MM:SS" string, 
+%%%                       Time can be represented as a "HH:MM:SS" string,
 %%%                       "HH:MM" string or a tuple.
 %%% @type hourrange()   = {FromTime::time(), ToTime::time()}
 %%% @type schedule()    = [ DaySchedule ]
@@ -250,7 +250,7 @@ reschedule_child(Name) ->
 
 %%-------------------------------------------------------------------------
 %% @spec (Name, Reason) -> ok | {error, Why}
-%% @doc Bounce child process with reason `normal'.  If process is not 
+%% @doc Bounce child process with reason `normal'.  If process is not
 %%      scheduled to run, nothing happens and the supervisor will activate
 %%      it at the future scheduled time.
 %% @end
@@ -389,7 +389,7 @@ handle_info({'EXIT', Pid, Reason}, #state{pid=Pid} = State) ->
     #state{intensity=I, period=P, last_fail=T, restarts=C, delay=D} = State,
     case FailAction = do_onfailure(Reason, State) of
     default ->
-        Now = now(),
+        Now = os:timestamp(),
         if Reason =:= normal; Reason =:= shutdown ->
             do_report_shutdown([{onfailure, FailAction}], Reason, State#state{status=terminated});
         true ->
@@ -507,7 +507,7 @@ wakeup_interval(Secs,  MSecs) -> Secs*1000 - MSecs.
 %%          Type = start | restart | reschedule | scheduled_stop
 %%          Status = started | already_running | scheduled
 start_child(#state{pid=Pid} = State, Type) ->
-    Now         = now(),
+    Now         = os:timestamp(),
     {Date,Time} = calendar:now_to_universal_time(Now),
     MSecs       = msecs(Now),
     When        = case Type of
@@ -522,7 +522,7 @@ start_child(#state{pid=Pid} = State, Type) ->
             TRef = State#state.stop_timer;
         _ ->
             cancel_timer(State#state.stop_timer),
-            Now  = now(),
+            Now  = os:timestamp(),
             Int  = get_interval(now_to_time(Now), UntilTime, 1)*1000 - msecs(Now),
             TRef = erlang:send_after(Int, self(), {timer, scheduled_stop})
         end,
@@ -567,11 +567,11 @@ try_start_child(#state{mfa = {M,F,A}, name=Name, report_type=Type} = State, Unti
         report_progress(false, Name, Report, Type),
         cancel_timer(State#state.start_timer),
         cancel_timer(State#state.stop_timer),
-        Now      = now(),
+        Now      = os:timestamp(),
         Interval = get_interval(now_to_time(Now), UntilTime, 1)*1000 - msecs(Now),
         TRef     = erlang:send_after(Interval, self(), {timer, scheduled_stop}),
         NewState = State#state{
-             pid=ChildPid, start_timer=undefined, stop_timer=TRef, reported=false, 
+             pid=ChildPid, start_timer=undefined, stop_timer=TRef, reported=false,
              monref=MRef, status=running
         },
         {ok, started, NewState}
@@ -707,7 +707,7 @@ do_report(Other, F, Report, Msg) ->
 %%-------------------------------------------------------------------------
 validate_schedule({?COMPILED_SPEC, DaySpecs}=S) when is_tuple(DaySpecs), tuple_size(DaySpecs) =:= 7 ->
     S;
-validate_schedule(DaySpecs) when is_tuple(DaySpecs), tuple_size(DaySpecs) =:= 7 -> 
+validate_schedule(DaySpecs) when is_tuple(DaySpecs), tuple_size(DaySpecs) =:= 7 ->
     {?COMPILED_SPEC, DaySpecs};
 validate_schedule(DaySpecs) ->
     {?COMPILED_SPEC, validate_time_spec(DaySpecs, erlang:make_tuple(7, []))}.
@@ -850,7 +850,7 @@ merge_specs([], _N, {I, S}, Acc) ->
 %%-------------------------------------------------------------------------
 %% @equiv get_next_time/2
 %% @doc Function returns execution time following next execution time.
-%%      E.g. if the scheduling window is 
+%%      E.g. if the scheduling window is
 %%      `[{mon, {"9:00:00", "17:00:00"}}, {tue, {"9:00:00", "17:00:00"}}]'
 %%      and the function is called at 10am on Monday, it'll return Tuesday
 %%      9am time (`{1, IntervalSeconds, {{9,0,0},{17,0,0}}}').
